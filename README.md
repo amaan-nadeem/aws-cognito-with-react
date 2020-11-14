@@ -1,46 +1,90 @@
-# Getting Started with Create React App
+# AWS COGNITO AND IAM AUTHENTICATION WITH REACT
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Cognito is an aws most widely used user authentication and management service which provides easy way to develop a product with being worried about user authentication security backlocks and managing api's with custom api gateways.
 
-## Available Scripts
+## Configuration
 
-In the project directory, you can run:
+First initiate a react project it can either be of with or without typescript
 
-### `yarn start`
+```npm i --save bootstrap reactstrap styled-components validator uuid amazon-cognito-identity-js jwt-decode
+npm i --save-dev @types/reactstrap @types/styled-components @types/validator @types/uuid @types/jwt-decode
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+We are Going to use
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+#### amazon-cognito-identity-js NPM Package
 
-### `yarn test`
+for our user authentication flow. CognitoUserPool method of our main package requires only
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```COGNITO_USER_POOL_ID
+COGNITO_CLIENT_ID
+```
 
-### `yarn build`
+for configure aws-cognito in our application
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## NECESSARY METHODS FOR COMPLETE AUTHENTICATION FLOW
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+We'll first import following methods
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```import {
+  AuthenticationDetails, # username and password and instantiate its class object
+  CognitoUserPool, # set cognito user pool
+  CognitoUserAttribute, # use to setup user's attributes other than
+  CognitoUser, # takes in Username and UserPool and instantiate cognito user object with different authentication methods
+  CognitoUserSession,
+} from "amazon-cognito-identity-js";
+```
 
-### `yarn eject`
+## CognitoUserPool Methods
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+It contains signup methods
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```const userPool = new CognitoUserPool({
+  UserPoolId: <COGNITO_USER_POOL_ID>,
+  ClientId: <COGNITO_CLIENT_ID>,
+});
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+- userPool.signUp(username, password, attrList, authenticationRule || null, callback(error, result))
+- userPool.confirmRegistration(verificationCode, status [true or false], callback(error, result))
+- userPool.resendConfirmationCode(callback(error, result))
+```
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## CognitoUserPool METHODS
 
-## Learn More
+It contains all sign in methods
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```
+const authData = {
+    Username: email,
+    Password: password,
+  };
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+  const authDetails = new AuthenticationDetails(authData);
+  const userData = {
+    Username: email,
+    Pool: userPool,
+  };
+
+
+  const cognitoUser = new CognitoUser(userData);
+
+- cognitoUser.authenticateUser(authDetails, {
+      onSuccess: function(result),
+      onFailure: function(error),
+  }
+- cognitoUser.getUserAttributes(callback(err, result))
+- cognitoUser.getAttributeVerificationCode(type (mostly its 'email'), {
+    onSuccess: function(result),
+    onFailure: function(error),
+    inputVerificationCode: function() # its null if you want to input verification code on different page
+})
+
+- cognitoUser.verifyAttribute('email', verificationCode, this);
+- cognitoUser.deleteAttributes(attributeList, callback(err, result))
+- cognitoUser.updateAttributes(attributeList, function(err, result))
+- cognitoUser.enableMFA(function(err, result)) # to enable multifactor authentication
+- cognitoUser.disableMFA(function(err, result)) # to disable multifactor authentication
+- cognitoUser.changePassword(oldPassword, newPassword, callback(err, result))
+- cognitoUser.signOut() # to sign out from application
+- cognitoUser.globalSignOut(callback) # Global signout for an authenticated user(invalidates all issued tokens).
+```.
